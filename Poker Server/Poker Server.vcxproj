@@ -171,6 +171,7 @@
     <ClInclude Include="Inputs.h" />
     <ClInclude Include="Outputs.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="Rules.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

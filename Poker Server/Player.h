@@ -9,10 +9,10 @@ class Player
 {
 
 private:
-	int id=0;
+	uint32_t id=0;
 	int bankroll=10000;
 	Hand hand;
-	bool inTheHand = false;
+	bool inTheHand = true;
 	bool inPot[10] ;
 	int currentWager = 0;
 	Inputs input;
@@ -24,6 +24,7 @@ public:
 	const Hand& GetHand() const;
 	const bool GetInTheHand();
 	void RevealHand();
+	uint32_t GetId();
 
 	void ClearHand();
 	bool GetIsAllIn();
@@ -35,6 +36,7 @@ public:
 	const int GetCurrentWager() const;
 	void SetCurrentWager(int x);
 	void SetInTheHand(bool set);
+	void SetID(uint32_t ID);
 
 	
 

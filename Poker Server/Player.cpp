@@ -4,6 +4,7 @@ Player::Player()
 {
 	for (int i = 0;i < 10;i++) {
 		inPot[i] = false;
+		inTheHand = true;
 	}
 }
 
@@ -31,6 +32,11 @@ void Player::RevealHand()
 	hand.Print();
 }
 
+uint32_t Player::GetId()
+{
+	return id;
+}
+
 void Player::ClearHand()
 {
 	hand.Clear();
@@ -44,7 +50,7 @@ void Player::ClearHand()
 Inputs::Option Player::GetDecision()
 {
 	std::cout << name << ", what would you like to do?\n";
-	return input.UserInput();
+	return input.GetUserInput();
 }
 
 const int Player::GetCurrentWager() const
@@ -56,6 +62,11 @@ void Player::SetInTheHand(bool set)
 {
 	inTheHand = set;
 	
+}
+
+void Player::SetID(uint32_t ID)
+{
+	id = ID;
 }
 
 void Player::SetCurrentWager(int x)

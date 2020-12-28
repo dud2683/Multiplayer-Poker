@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
-
+#include<string>
+#include <vector>
 
 enum class CustomMsgTypes : uint32_t
 {
@@ -15,5 +16,11 @@ enum class CustomMsgTypes : uint32_t
 	Flop,
 	Turn,
 	River,
-	Action
+	Action,
+	StartGame,
+	SentAction,
+	BoardCards,
+	RevealCards
 };
+
+

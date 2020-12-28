@@ -144,9 +144,8 @@ namespace olc
 							
 
 							// Give the user server a chance to deny connection
-							std::string accept;
-							std::getline(std::cin, accept);
-							if (OnClientConnect(newconn)&&accept=="Yes")
+							
+							if (OnClientConnect(newconn))
 							{								
 								// Connection allowed, so add to container of new connections
 								m_deqConnections.push_back(std::move(newconn));

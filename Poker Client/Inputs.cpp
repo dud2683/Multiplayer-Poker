@@ -2,6 +2,8 @@
 
 
 
+
+
 Inputs::Option Inputs::GetUserInput()
 {
 	Inputs::Decisions command;
@@ -98,4 +100,44 @@ int Inputs::ParseForValue(std::string input)
 {
 	int x=std::stoi(input);
 	return x;
+}
+
+void Inputs::Option::Print(std::string plaName)
+{
+	std::string out = plaName;
+	switch (this->d)
+	{
+	case Decisions::Check:
+		out += " checks.\n";
+		break;
+	case Decisions::Call:
+		out += " calls.\n";
+		break;
+	case Decisions::Bet:
+		out += " bets ";
+		out += std::to_string(this->value);
+		out += ".\n";
+		break;
+	case Decisions::Raise_To:
+		out += " raises to ";
+		out += std::to_string(this->value);
+		out += ".\n";
+		break;
+	
+	case Decisions::Fold:
+		out += " folds.\n";
+		break;
+	case Decisions::All_In:
+		out += " goes all in for ";
+		out += std::to_string(this->value);
+		out += ".\n";
+		break;
+	
+	
+	default:
+		break;
+		
+	}
+	std::cout << out;
+
 }
