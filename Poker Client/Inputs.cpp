@@ -78,12 +78,10 @@ Inputs::Decisions Inputs::ParseForDecision(std::string input)
 	else if (input == "bet") {
 		return Decisions::Bet;
 	}
-	else if (input == "raiseto") {
+	else if (input == "raiseto"||input=="raise") {
 		return Decisions::Raise_To;
 	}
-	else if (input == "raiseby") {
-		return Decisions::Raise_By;
-	}
+	
 	else if (input == "allin") {
 		return Decisions::All_In;
 	}
@@ -91,7 +89,7 @@ Inputs::Decisions Inputs::ParseForDecision(std::string input)
 		return Decisions::Call;
 	}
 	else {
-		std::cout << "That was not a valid input. Make sure to specifie RaiseTo or RaiseBy, no spaces.\n";
+		std::cout << "That was not a valid input. Make sure not to put spaces between words.\n";
 		return Decisions::Invalid;
 	}
 }

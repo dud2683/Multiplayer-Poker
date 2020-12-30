@@ -16,9 +16,9 @@ void Player::ReceiveCard(Card& card)
 
 }
 
-const Hand& Player::GetHand() const
+const Card& Player::GetHand(int x) const
 {
-	return hand;
+	return hand.cards[x];
 }
 
 const bool Player::GetInTheHand()

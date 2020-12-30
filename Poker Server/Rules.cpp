@@ -112,7 +112,10 @@ Result rules::CompareHands(const Player& p1, const Player& p2, const std::vector
 Hand rules::Merge(const Player& p, const std::vector<Card>& cCards)
 {
 	Hand returnHand;
-	std::vector<Card> usableCards = p.GetHand().cards;
+	std::vector<Card> usableCards;
+	for (int i = 0;i < 2;i++) {
+		usableCards.push_back(p.GetHand(i));
+	}
 	for (int i = 0;i < cCards.size();i++) {
 		usableCards.push_back(cCards[i]);
 	}

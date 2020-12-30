@@ -61,19 +61,16 @@ bool Card::operator==(const Card& lhs) const
 }
 
 void Card::Print() const
-   
+
 {
+#ifdef _WIN32
     int k;
-    std::string optional = "";
-    if (GetValName() == "Ace" || GetValName() == "8") {
-        optional = "n";
-    }
     switch (suit) {
     case Suit::Clubs:
         k = 10;
-        break;
+            break;
     case Suit::Diamonds:
-        k = 3;
+        k = 1;
         break;
     case Suit::Hearts:
         k = 4;
@@ -82,16 +79,30 @@ void Card::Print() const
         k = 8;
         break;
     default:
-        k = 0;
+        k = 7;
         break;
     }
 
 
-   
-    std::cout <<"a"<<optional<<" "<< GetValName() << " of " << GetSuitName();
+    HANDLE  hConsole;
+    hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute(hConsole, k);
+#endif 
 
+
+
+    std::string optional = "";
+    if (GetValName() == "Ace" || GetValName() == "8") {
+        optional = "n";
+    }
+
+
+    std::cout << "a" << optional << " " << GetValName() << " of " << GetSuitName();
+#ifdef _WIN32
+    k = 7;
+    SetConsoleTextAttribute(hConsole, k);
+#endif 
 }
-
 std::string Card::GetValName() const
 {
     return GetValName(value);

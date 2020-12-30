@@ -42,6 +42,16 @@ void Game::AddPlayer(Player pla)
 	numberOfPlayers++;
 }
 
+void Game::RemovePlayer(uint32_t id)
+{
+	for (int i = 0;i < numberOfPlayers;i++) {
+		if (players[i].GetId() == id) {
+			players.erase(players.begin() + i);
+		}
+	}
+	numberOfPlayers--;
+}
+
 void Game::Rotate()
 {
 	Player temp = players[0];
@@ -282,17 +292,40 @@ void Game::Reset()
 {
 	for (int i = 0;i < players.size();i++) {
 		players[i].ClearHand();
-		players[i].SetInTheHand(true);
+		players[i].SetInTheHand(players[i].GetBankroll() > 0);
+
 	}
 	cCards.clear();
-	numberOfPlayersInTheHand = numberOfPlayers;
-	for (auto i = 0;i < 10;i++) {
+	int total = 0;
+	for (int i = 0;i < numberOfPlayers;i++) {
+		if (players[i].GetInTheHand())
+			total++;
+		if (total == 1)
+			SmallBlindPlayer = &players[i];
+		else if (total == 2)
+			BigBlindPlayer = &players[i];
+	}
+	//dealer assign
+	int temp = 0;
+	for (int i = 0;i < numberOfPlayers;i++) {
+		if (players[i].GetInTheHand())
+			temp++;
+		if (temp == total)
+			Button = &players[i];
+		
+	}
+	numberOfPlayersInTheHand = total;
+	for (int i = 0;i < 10;i++) {
 		pots[i] = 0;
 	}
 	currentBet = 0;
 	potThisRound = 0;
 	personToBet = 2;
-	
+	if (numberOfPlayersInTheHand < 3) {
+		system("pause");
+		Reset();
+
+	}
 }
 
 bool Game::ValidOption(Inputs::Option input, const Player& pla)
@@ -351,6 +384,7 @@ void Game::BigBlind(Player& pla)
 
 bool Game::ExecuteOption(Inputs::Option& option, Player& pla)
 {
+	
 	bool returnBool;
 	auto copy = option;
 	switch (option.d) {
@@ -391,10 +425,25 @@ bool Game::ExecuteOption(Inputs::Option& option, Player& pla)
 		returnBool = false;
 		break;
 	}
+	IncreasePlayerToBet();
+
+	return returnBool;
+}
+
+int Game::GetPot()
+{
+	int total = 0;
+	for (int i = 0;i < 10;i++) {
+		total += pots[i];
+	}
+	return total;
+}
+
+void Game::IncreasePlayerToBet()
+{
 	personToBet++;
 	if (personToBet == numberOfPlayers)
 		personToBet = 0;
-	return returnBool;
 }
 
 void Game::ServerReveal()
@@ -411,6 +460,7 @@ void Game::RaiseBy(int amount, Player& pla)
 {
 	Call(pla);
 	currentBet += amount;
+	potThisRound += amount;
 	pla.RemoveFromBankroll(amount);
 	pla.SetCurrentWager(currentBet);
 }
@@ -475,7 +525,8 @@ void Game::UpdatePot()
 void Game::SetFirstBettingRound()
 {
 	
-	lastPlayerToRaise = &players[1];
+	lastPlayerToRaise = BigBlindPlayer;
+	personToBet = 2;
 	currentBet = bigBlind;
 	
 }

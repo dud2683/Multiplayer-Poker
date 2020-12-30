@@ -442,6 +442,7 @@ void HandType::Name()
 void HandType::Print(int numberOfKickers)
 {
 	
+	std::cout << name;
 	std::string optional = " ";
 	switch(numberOfKickers) {
 		

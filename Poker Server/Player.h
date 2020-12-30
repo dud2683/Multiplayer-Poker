@@ -21,7 +21,7 @@ public:
 	Player();
 	std::string name;
 	void ReceiveCard(Card& card);
-	const Hand& GetHand() const;
+	const Card& GetHand(int x) const;
 	const bool GetInTheHand();
 	void RevealHand();
 	uint32_t GetId();

@@ -5,6 +5,7 @@
 
 enum class CustomMsgTypes : uint32_t
 {
+	//server stuff
 	ServerAccept,
 	ServerDeny,
 	ServerPing,
@@ -12,15 +13,22 @@ enum class CustomMsgTypes : uint32_t
 	ServerMessage,
 	GetName,
 	Disconnect,
+	//game stuff
 	YourCards,
+	PotSize,
 	Flop,
 	Turn,
 	River,
 	Action,
+	Folds,
+	InvalidAction,
 	StartGame,
 	SentAction,
-	BoardCards,
-	RevealCards
+	RevealCards,
+	Bankrolls,
+	NewRound,
+	Winners,
+	SinglePlayerLeft
 };
 
 
