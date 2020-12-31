@@ -1,35 +1,7 @@
 #include "Game.h"
 #include <assert.h>
 
-void Game::Go()
-{
-	
-	Reset();
-	InitalDeal();
-	ServerReveal();
-	PrintBankrolls();
-	Betting(true);
-	
-	if (numberOfPlayersInTheHand > 1) {
-		Flop();
-		Betting();
-		if (numberOfPlayersInTheHand > 1) {
-			Turn();
-			Betting();
-			if (numberOfPlayersInTheHand > 1) {
-				River();
-				Betting();
 
-
-			}
-		
-		}
-	}
-	Reveal();
-	PayOutWinners();
-	
-	Rotate();
-}
 
 Game::Game()
 {
@@ -42,6 +14,13 @@ void Game::AddPlayer(Player pla)
 	numberOfPlayers++;
 }
 
+void Game::Swap(Player& p1, Player& p2)
+{
+	auto temp = p1;
+	p1 = p2;
+	p2 = temp;
+}
+
 void Game::RemovePlayer(uint32_t id)
 {
 	for (int i = 0;i < numberOfPlayers;i++) {
@@ -52,6 +31,45 @@ void Game::RemovePlayer(uint32_t id)
 	numberOfPlayers--;
 }
 
+Player* Game::FindPlayerWithID(uint32_t id)
+{
+	for (int i = 0;i < numberOfPlayers;i++) {
+		if (players[i].GetId() == id) {
+			Player* pp = &players[i];
+			return pp;
+		}	 
+	}
+	return nullptr;
+}
+
+bool Game::SortPlayersByHand()
+{
+	copy.clear();
+	for (int i = 0;i < numberOfPlayers;i++) {
+		copy.push_back(players[i]);
+	}
+	bool thereWasASwap = true;
+	bool thereWasATie = false;
+	while (thereWasASwap) {
+		thereWasASwap = false;
+		for (int i = 0;i < numberOfPlayers - 1;i++) {
+			int r = rules::CompareHands(copy[i], copy[i + int(1)], cCards).leftWon;
+			if (r < 0) {
+				thereWasASwap = true;
+				Swap(copy[i], copy[i + int(1)]);
+			}
+			else if (r == 0) {
+				if (copy[i].maximumReturnPerPlayer < copy[i + int(1)].maximumReturnPerPlayer) {
+					thereWasASwap = true;
+					thereWasATie = true;
+					Swap(copy[i], copy[i + int(1)]);
+				}
+			}
+		}
+	}
+	return thereWasATie;
+}
+
 void Game::Rotate()
 {
 	Player temp = players[0];
@@ -60,6 +78,45 @@ void Game::Rotate()
 		players[i] = players[next];	
 	}
 	players.back() = temp;
+}
+
+void Game::PayoutWinnersWithAllIn()
+{
+	winners.clear();
+	bool tie = SortPlayersByHand();
+	int numberOfTimes = 0;
+	for (int i = 0;i < numberOfPlayers;i++) {
+		int totalForThisPlayer = 0;
+		int winnerMaxReturnpp;
+		for (int j = numberOfTimes;j < numberOfPlayers;j++) {
+			
+			winnerMaxReturnpp = copy[i].maximumReturnPerPlayer;
+			int totalWagerFromOther = copy[j].GetTotalWager();
+			if (totalWagerFromOther >= winnerMaxReturnpp)
+				totalForThisPlayer += winnerMaxReturnpp;
+			else
+				totalForThisPlayer += totalWagerFromOther;
+			
+		}
+		if (totalPot > 0) {
+			numberOfTimes++;
+			int remainingPot = totalPot	- totalForThisPlayer;
+			
+			Player* reference = FindPlayerWithID(copy[i].GetId());
+			winners.insert(winners.begin(), reference);
+			if(remainingPot<=0){
+				totalForThisPlayer = totalPot;
+			}
+			if(totalForThisPlayer>0)
+				SplitPotWinners.push_back(pA(*reference, totalForThisPlayer));
+			reference->AddToBankroll(totalForThisPlayer);
+			totalPot -= totalForThisPlayer;
+			RemoveFromPossibleWinOfAllPlayers(winnerMaxReturnpp);
+			if (totalPot <= 0) {
+				i = numberOfPlayers;
+			}
+		}
+	}
 }
 
 int Game::Betting(bool isFirstBetting)
@@ -101,17 +158,7 @@ int Game::Betting(bool isFirstBetting)
 		}
 		return true;
 	}
-	else {
-
-		pots[0] += potThisRound;
-		potThisRound = 0;
-		currentBet = 0;
-		for (int i = 0;i < numberOfPlayers;i++) {
-			players[i].SetCurrentWager(0);
-		}
-		personToBet = 0;
-		return -1;
-	}
+	
 }
 
 void Game::InitalDeal()
@@ -293,8 +340,11 @@ void Game::Reset()
 	for (int i = 0;i < players.size();i++) {
 		players[i].ClearHand();
 		players[i].SetInTheHand(players[i].GetBankroll() > 0);
+		players[i].SetTotalWager(0);
+		players[i].maximumReturnPerPlayer = players[i].GetBankroll();
 
 	}
+	SplitPotWinners.clear();
 	cCards.clear();
 	int total = 0;
 	for (int i = 0;i < numberOfPlayers;i++) {
@@ -315,17 +365,13 @@ void Game::Reset()
 		
 	}
 	numberOfPlayersInTheHand = total;
-	for (int i = 0;i < 10;i++) {
-		pots[i] = 0;
-	}
+	
 	currentBet = 0;
-	potThisRound = 0;
+	totalPot = 0;
 	personToBet = 2;
-	if (numberOfPlayersInTheHand < 3) {
-		system("pause");
-		Reset();
-
-	}
+	thereWasAnAllIn = false;
+	
+	
 }
 
 bool Game::ValidOption(Inputs::Option input, const Player& pla)
@@ -335,6 +381,10 @@ bool Game::ValidOption(Inputs::Option input, const Player& pla)
 		bool rightTime;
 		bool enoughMoney;
 		bool raiseEnough;
+	case Inputs::Decisions::All_In:
+		return true;
+		break;
+
 	case Inputs::Decisions::Fold:
 		return true;
 		break;
@@ -348,17 +398,16 @@ bool Game::ValidOption(Inputs::Option input, const Player& pla)
 		break;
 	case Inputs::Decisions::Call:
 		rightTime = pla.GetCurrentWager()<currentBet;
-		enoughMoney = (pla.GetBankroll() >= currentBet - pla.GetCurrentWager());
+		enoughMoney = (pla.GetBankroll() > currentBet - pla.GetCurrentWager());
 		return rightTime && enoughMoney;
 		break;
-	case Inputs::Decisions::Raise_By:
-		 rightTime = currentBet != 0;
-		 enoughMoney = (pla.GetBankroll() >= input.value);
-		 raiseEnough = (input.value >= lastRaise);
-		 return rightTime && enoughMoney && raiseEnough;
-		 break;
+	
 	case Inputs::Decisions::Raise_To:
-		return(ValidOption(Inputs::Option(Inputs::Decisions::Raise_By, input.value-currentBet), pla));
+		rightTime = currentBet != 0;
+		enoughMoney = pla.GetBankroll() > input.value-pla.GetCurrentWager();
+		raiseEnough = input.value - currentBet >= lastRaise;
+		return rightTime && enoughMoney && raiseEnough;
+		break;
 	default:
 		return false;
 		break;
@@ -369,7 +418,7 @@ void Game::SmallBlind(Player& pla)
 {
 	std::cout <<"The blinds are "<<smallBlind<<", "<<bigBlind<<".\n" <<pla.name << " is the small blind,";
 	pla.RemoveFromBankroll(smallBlind);
-	pots[0] += smallBlind;
+	totalPot += smallBlind;
 	pla.SetCurrentWager(smallBlind);
 	
 }
@@ -378,7 +427,7 @@ void Game::BigBlind(Player& pla)
 {
 	std::cout << " and " << pla.name << " is the big blind.\n";
 	pla.RemoveFromBankroll(bigBlind);
-	pots[0] += bigBlind;
+	totalPot += bigBlind;
 	pla.SetCurrentWager(bigBlind);
 }
 
@@ -409,14 +458,7 @@ bool Game::ExecuteOption(Inputs::Option& option, Player& pla)
 		numberOfPlayersInTheHand--;
 		returnBool = false;
 		break;
-	case Inputs::Decisions::Raise_By:
-		
-		option.d = Inputs::Decisions::Raise_To;
-		option.value += currentBet;
-		RaiseBy(copy.value, pla);
-		
-		returnBool = true;
-		break;
+	
 	case Inputs::Decisions::Raise_To:
 		RaiseTo(option.value, pla);
 		returnBool = true;
@@ -426,17 +468,13 @@ bool Game::ExecuteOption(Inputs::Option& option, Player& pla)
 		break;
 	}
 	IncreasePlayerToBet();
-
+	
 	return returnBool;
 }
 
 int Game::GetPot()
 {
-	int total = 0;
-	for (int i = 0;i < 10;i++) {
-		total += pots[i];
-	}
-	return total;
+	return totalPot;
 }
 
 void Game::IncreasePlayerToBet()
@@ -445,6 +483,8 @@ void Game::IncreasePlayerToBet()
 	if (personToBet == numberOfPlayers)
 		personToBet = 0;
 }
+
+
 
 void Game::ServerReveal()
 {
@@ -456,24 +496,28 @@ void Game::ServerReveal()
 	}
 }
 
-void Game::RaiseBy(int amount, Player& pla)
-{
-	Call(pla);
-	currentBet += amount;
-	potThisRound += amount;
-	pla.RemoveFromBankroll(amount);
-	pla.SetCurrentWager(currentBet);
-}
+
 
 void Game::RaiseTo(int amount, Player& pla)
 {
-	RaiseBy(amount - currentBet,pla);
+	int initialWager = pla.GetCurrentWager();
+	int amountAdded = amount - initialWager;
+	pla.SetCurrentWager(amount);
+	pla.RemoveFromBankroll(amountAdded);
+	int deltaRaised = amount - currentBet;
+	lastRaise = deltaRaised;
+	currentBet = amount;
+	potThisBettingRound += amountAdded;
+	totalPot += amountAdded;
+
 }
 
 void Game::Bet(int amount, Player& pla)
 {
 	currentBet = amount;
-	potThisRound += amount;
+	potThisBettingRound += amount;
+	totalPot += amount;
+	lastRaise = amount;
 	pla.RemoveFromBankroll(amount);
 	pla.SetCurrentWager(amount);
 }
@@ -482,17 +526,37 @@ void Game::Call(Player& pla)
 {
 	int delta = currentBet - pla.GetCurrentWager();
 	pla.RemoveFromBankroll(delta);
-	potThisRound += delta;
+	potThisBettingRound += delta;
+	totalPot += delta;
 	pla.SetCurrentWager(currentBet);
 }
 
 void Game::All_In(Player& pla)
 {
+	int total = pla.GetCurrentWager()+pla.GetBankroll();
+	int delta = pla.GetBankroll();
+	pla.SetIsAllIn(true);
+	pla.SetInTheHand(false);
+	if (total > 2 * currentBet)
+		lastPlayerToRaise = nullptr;
+	
+	if (currentBet < total) {
+		currentBet = total;
+	}
+	pla.SetCurrentWager(total);
+	pla.RemoveFromBankroll(delta);
+	potThisBettingRound += delta;
+	totalPot += delta;
+	thereWasAnAllIn = true;
+	
+	
 }
 
 void Game::Fold(Player& pla)
 {
 	pla.SetInTheHand(false);
+	if (lastPlayerToRaise == &pla)
+		lastPlayerToRaise = nullptr;
 }
 
 void Game::Check(Player& pla)
@@ -501,24 +565,23 @@ void Game::Check(Player& pla)
 
 void Game::ResetBettingRound()
 {
-	pots[0] += potThisRound;
-	potThisRound = 0;
-	currentBet = 0;
 	for (int i = 0;i < numberOfPlayers;i++) {
+		players[i].SetTotalWager(players[i].GetCurrentWager()+players[i].GetTotalWager());
 		players[i].SetCurrentWager(0);
 	}
+	potThisBettingRound =0;
+	lastRaise = bigBlind;
 	personToBet = 0;
-	lastPlayerToRaise = nullptr;
+	currentBet = 0;
+	
 }
 
 void Game::UpdatePot()
 {
-	pots[0] += potThisRound;
-	potThisRound = 0;
-	currentBet = 0;
-	for (int i = 0;i < numberOfPlayers;i++) {
-		players[i].SetCurrentWager(0);
-	}
+	
+	
+	lastRaise = bigBlind;
+	
 	personToBet = 0;
 }
 
@@ -528,22 +591,41 @@ void Game::SetFirstBettingRound()
 	lastPlayerToRaise = BigBlindPlayer;
 	personToBet = 2;
 	currentBet = bigBlind;
+	potThisBettingRound = totalPot;
 	
 }
 
-void Game::PayOutWinners()
+void Game::RemoveFromPossibleWinOfAllPlayers(int amount)
 {
-	if (winners.size() > 0)
+	for (int i = 0;i < numberOfPlayers;i++) {
+		copy[i].maximumReturnPerPlayer -= amount;
+		if (copy[i].maximumReturnPerPlayer < 0)
+			copy[i].maximumReturnPerPlayer = 0;
+		
+		copy[i].SetCurrentWager(copy[i].GetCurrentWager()- amount);
+		if (copy[i].GetCurrentWager() < 0)
+			copy[i].SetCurrentWager(0);
+	}
+}
+
+int Game::PayOutWinners()
+{
+	if (thereWasAnAllIn) {
+		PayoutWinnersWithAllIn();
+		return 0;
+	}
+	else if (winners.size() > 0)
 	{
 		int numberOfWinners = int(winners.size());
-		int amount = pots[0] / numberOfWinners;
+		int amount = totalPot / numberOfWinners;
 
 		for (int i = 0;i < numberOfWinners;i++) {
 			winners[i]->AddToBankroll(amount);
 			std::cout << winners[i]->name << " received " << amount << ".\n";
 		}
-		pots[0] = 0;
+		return amount;
 	}
+	
 }
 
 void Game::PrintBankrolls()
@@ -558,10 +640,7 @@ void Game::PrintBankrolls()
 
 void Game::PrintPot()
 {
-	int totalPot = 0;
-	for (int i = 0;i < 10;i++) {
-		totalPot+=pots[i];
-	}
+	
 	std::cout << "There is " << totalPot << " in the pot.\n";
 }
 

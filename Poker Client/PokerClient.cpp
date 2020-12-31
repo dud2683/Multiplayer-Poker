@@ -433,10 +433,12 @@ int main()
 				{
 					int numberOfWinners;
 					int numberOfKickers;
+					int amountWon;
 					
 					Card c1;
 					Card c2;
 
+					msg >> amountWon;
 					msg >> numberOfWinners;
 					msg >> numberOfKickers;
 					msg >> c1;
@@ -453,11 +455,11 @@ int main()
 							for (int i = 0;i < cCards.size();i++) {
 								pHand.cards.push_back(cCards[i]);
 							}
-							pHand.cards.push_back(c1);
-							pHand.cards.push_back(c2);
+							pHand.cards.push_back(winners[i].c1);
+							pHand.cards.push_back(winners[i].c2);
 							HandType handT = pHand.FindBestHand();
 
-							std::cout << winners[i].name << " won with a ";
+							std::cout << winners[i].name << " won "<<amountWon<<" with a ";
 							handT.Name();
 							handT.Print(numberOfKickers);
 							if ((i <= (winners.size() - 2))&&winners.size()>1) {

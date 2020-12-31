@@ -69,7 +69,7 @@ void Inputs::Split(std::string raw)
 
 Inputs::Decisions Inputs::ParseForDecision(std::string input)
 {
-	if (input == "check"||input=="") {
+	if (input == "check"/*||input==""*/) {
 		return Decisions::Check;
 	}
 	else if (input == "fold") {

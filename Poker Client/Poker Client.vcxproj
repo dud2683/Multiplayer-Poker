@@ -162,6 +162,13 @@
     <ClInclude Include="Card.h" />
     <ClInclude Include="Hand.h" />
     <ClInclude Include="Inputs.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Poker Client.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="PClientIco.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

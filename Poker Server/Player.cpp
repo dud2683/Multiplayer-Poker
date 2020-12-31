@@ -74,6 +74,16 @@ void Player::SetCurrentWager(int x)
 	currentWager = x;
 }
 
+const int Player::GetTotalWager() const
+{
+	return totalWager;
+}
+
+void Player::SetTotalWager(int x)
+{
+	totalWager = x;
+}
+
 const int Player::GetBankroll() const
 {
 	return bankroll;

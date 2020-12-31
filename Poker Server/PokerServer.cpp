@@ -53,7 +53,7 @@ public:
 			}
 		}
 	}
-	void UpdateIDs() {
+	void UpdateIDs(CustomServer& server) {
 		while (waitlist.size() > 0) {
 			auto temp = waitlist.back();
 			waitlist.pop_back();
@@ -63,6 +63,13 @@ public:
 		for (int i = 0;i < clients.size();i++) {
 			auto id = clients[i].clientPtr->GetID();
 			clients[i].clientId = id;
+		}
+		server.gm.Reset();
+		if (server.gm.numberOfPlayersInTheHand < 3&&server.gameIsStarted) {
+			
+			server.Update(-1, true);
+			server.gameIsStarted = false;
+			UpdateIDs(server);
 		}
 		
 	}
@@ -247,6 +254,7 @@ void Deal(CustomServer& server) {
 	SendAllBankrolls(server);
 }
 void BettingRound(CustomServer& server, bool first) {
+	server.gm.lastPlayerToRaise = nullptr;
 	olc::net::message<CustomMsgTypes> bmsg;
 	bmsg.header.id = CustomMsgTypes::PotSize;
 	bmsg<<server.gm.GetPot();
@@ -263,18 +271,27 @@ void BettingRound(CustomServer& server, bool first) {
 	bool resolution = false;
 	bool firstPass = true;
 	while (!resolution) {
-		while (!server.gm.GetPlayerToBet().GetInTheHand()) {
+		int loops = 0;
+		bool everyoneIsAllIn = false;
+		while (!server.gm.GetPlayerToBet().GetInTheHand()&&!everyoneIsAllIn) {
 			server.gm.IncreasePlayerToBet();
+			loops++;
+			if (!(loops < server.gm.numberOfPlayers)) {
+				everyoneIsAllIn = true;
+				resolution = true;
+			}
 		}
 		auto& player = server.gm.GetPlayerToBet();
 		if (server.gm.numberOfPlayersInTheHand == 1)
 			resolution = true;
 		
-		else {
+		else if(!resolution) {
 			
 			if (server.gm.lastPlayerToRaise != nullptr&&server.gm.numberOfPlayersInTheHand>1) {
 				resolution = server.gm.lastPlayerToRaise->GetId() == player.GetId();
 			}
+			if (server.gm.lastPlayerToRaise == nullptr)
+				server.gm.lastPlayerToRaise = &server.gm.GetPlayerToBet();
 		}
 		if (!resolution) {
 			olc::net::message<CustomMsgTypes> msg;
@@ -293,6 +310,9 @@ void BettingRound(CustomServer& server, bool first) {
 					if (action != server.InvalidOption) {
 						messageFound = true;
 						foundAction = action;
+						if (action.d == Inputs::Decisions::All_In) {
+							action.value = player.GetBankroll();
+						}
 					}
 				}
 
@@ -305,16 +325,21 @@ void BettingRound(CustomServer& server, bool first) {
 					client->Send(msg);
 					messageFound = false;
 				}
+				
 				else {
 					olc::net::message<CustomMsgTypes> newmsg;
 					newmsg.header.id = CustomMsgTypes::SentAction;
 					server.MakeStringSendable(client->GetName(), newmsg);
-					
+					if (foundAction.d == Inputs::Decisions::All_In) {
+						foundAction.value = player.GetBankroll();
+					}
 					newmsg << foundAction;
 					server.MessageAllClients(newmsg, client);
 					foundAction.Print(client->GetName());
+					
+						
 				}
-
+				
 			}
 
 			if (firstPass) {
@@ -389,7 +414,7 @@ int Reveal(CustomServer& server) {
 		msg.header.id = CustomMsgTypes::SinglePlayerLeft;
 		int i;
 		for (int index = 0;index < server.gm.numberOfPlayers;index++) {
-			if (server.gm.players[index].GetInTheHand())
+			if (server.gm.players[index].GetInTheHand()|| server.gm.players[index].GetIsAllIn())
 				i = index;
 		}
 		std::string name = server.gm.players[i].name;
@@ -401,7 +426,15 @@ int Reveal(CustomServer& server) {
 		}
 	}
 	else {
+		//findLastPlayerToBet
+		int posOfLastRaise = 0;
 		for (int i = 0;i < server.gm.players.size();i++) {
+			if (server.gm.lastPlayerToRaise == &server.gm.players[i])
+				posOfLastRaise = i;
+		}
+		int i = posOfLastRaise;
+		do {
+			 
 			auto client = server.FindClientWithId(server.gm.players[i].GetId());
 			if (server.gm.players[i].GetInTheHand()) {
 				if (lastPlayer == nullptr) {
@@ -512,7 +545,11 @@ int Reveal(CustomServer& server) {
 					}
 				}
 			}
-		}
+			i++;
+			if(i==server.gm.players.size())
+				i=0;
+		} while (posOfLastRaise!=i);
+		
 	}
 	return highestKicker;
 }
@@ -555,6 +592,7 @@ void BankModifs(CustomServer& server) {
 	std::cout << "Modify bankrolls?\n";
 	std::string ans1;
 	std::string ans2;
+	std::string vstring;
 	int amount;
 	std::getline(std::cin, ans1);
 	if (ans1 == "y") {
@@ -567,29 +605,49 @@ void BankModifs(CustomServer& server) {
 				server.gm.players[i].AddToBankroll(amount);
 			}
 			else if (ans2 == "r") {
-				std::cout << "\nHow much would you like to add?\n";
+				std::cout << "\nHow much would you like to remove?\n";
 				std::cin >> amount;
 				server.gm.players[i].RemoveFromBankroll(amount);
 			}
+			std::getline(std::cin, vstring);
 		}
+		
 	}
 
 
 }
 void PayOutWinners(CustomServer& server, int numberOfKickers) {
-	server.gm.PayOutWinners();
+	int amountWon = server.gm.PayOutWinners();
 	int numberOfWinners = server.gm.winners.size();
 	for (int i = 0;i < numberOfWinners; i++) {
+		
+		
 		olc::net::message<CustomMsgTypes> msg;
 		msg.header.id = CustomMsgTypes::Winners;
-
-		Card c1 = server.gm.winners[i]->GetHand(0);
-		Card c2 = server.gm.winners[i]->GetHand(1);
-		server.MakeStringSendable(server.gm.winners[i]->name, msg);
+		
+		
+		Card c1;
+		Card c2;
+		
+		if (!server.gm.thereWasAnAllIn) {
+			
+			c1 = server.gm.winners[i]->GetHand(0);
+			c2 = server.gm.winners[i]->GetHand(1);
+			server.MakeStringSendable(server.gm.winners[i]->name, msg);
+		}
+		else {
+			c1 = server.gm.SplitPotWinners[i].p.GetHand(0);
+			c2 = server.gm.SplitPotWinners[i].p.GetHand(1);
+			server.MakeStringSendable(server.gm.SplitPotWinners[i].p.name, msg);
+			amountWon = server.gm.SplitPotWinners[i].amount;
+		}
+		
 		msg << c2;
 		msg << c1;
 		msg << numberOfKickers;
 		msg << numberOfWinners;
+		msg << amountWon;
+
 		for (int i = 0;i < server.gm.numberOfPlayers;i++) {
 			auto client = server.FindClientWithId(server.gm.players[i].GetId());
 			client->Send(msg);
@@ -600,20 +658,30 @@ void PayOutWinners(CustomServer& server, int numberOfKickers) {
 }
 
 
+
 int main()
 {
 	CustomServer server(45000); 
 	server.Start();
-	
+	bool thereWasAGame = false;
 
 	while (1)
 	{
-		
-		server.UpdateIDs();
+		if (thereWasAGame) {
+			
+			BankModifs(server);
+			server.UpdateIDs(server);
+
+		}
+		server.UpdateIDs(server);
 		bool firstRound = true;
 		
 		if (server.gameIsStarted) {
-			server.UpdateIDs();
+
+			server.UpdateIDs(server);
+		}
+		if (server.gameIsStarted) {
+
 			BankModifs(server);
 			ResetRound(server);
 			Deal(server);
@@ -624,6 +692,7 @@ int main()
 			firstRound = false;
 			
 			if (server.gm.numberOfPlayersInTheHand > 1) {
+				thereWasAGame = true;
 				Flop(server);
 				BettingRound(server,firstRound);
 				if (server.gm.numberOfPlayersInTheHand > 1) {
@@ -639,7 +708,9 @@ int main()
 				}
 			}
 			int temp = Reveal(server);
+			
 			PayOutWinners(server, temp);
+			
 			
 			
 			server.gm.Rotate();
@@ -649,7 +720,7 @@ int main()
 		}
 	
 			server.Update(-1);
-		
+			
 	}
 	
 

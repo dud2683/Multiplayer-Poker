@@ -11,13 +11,16 @@ class Player
 private:
 	uint32_t id=0;
 	int bankroll=10000;
+	
 	Hand hand;
 	bool inTheHand = true;
 	bool inPot[10] ;
 	int currentWager = 0;
+	int totalWager = 0;
 	Inputs input;
 	bool isAllIn = false;
 public:
+	int maximumReturnPerPlayer = bankroll;
 	Player();
 	std::string name;
 	void ReceiveCard(Card& card);
@@ -35,6 +38,8 @@ public:
 	const int GetBankroll() const;
 	const int GetCurrentWager() const;
 	void SetCurrentWager(int x);
+	const int GetTotalWager() const;
+	void SetTotalWager(int x);
 	void SetInTheHand(bool set);
 	void SetID(uint32_t ID);
 

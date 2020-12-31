@@ -7,7 +7,7 @@ class Game
 {
 
 public:
-	void Go();
+	
 	Game();
 	void AddPlayer(Player pla);
 private:
@@ -17,17 +17,31 @@ private:
 	int smallBlind = 10;
 	int bigBlind = 2 * smallBlind;
 
-	
+	void Swap(Player& p1, Player& p2);
 public:
+	struct pA{
+		pA(Player p, int amount) {
+			this->amount = amount;
+			this->p = p;
+		}
+		Player p;
+		int amount;
+	};
 	Player* BigBlindPlayer = nullptr;
 	Player* SmallBlindPlayer = nullptr;
 	Player* Button = nullptr;
+	std::vector<pA> SplitPotWinners;
+	bool thereWasAnAllIn = false;
 	int numberOfPlayers = 0;
 	int numberOfPlayersInTheHand = numberOfPlayers;
 	std::vector<Player> players;
 	std::vector<Player*> winners;
 	void RemovePlayer(uint32_t id);
+	std::vector<Player> copy;
+	Player* FindPlayerWithID(uint32_t id);
+	bool SortPlayersByHand();
 	void Rotate();
+	void PayoutWinnersWithAllIn();
 	int Betting(bool isFirst=false);
 	void InitalDeal();
 	void Flop();
@@ -37,7 +51,7 @@ public:
 	void Reset();
 	bool ValidOption(Inputs::Option input, const Player& pla);
 	void ServerReveal();
-	void PayOutWinners();
+	int PayOutWinners();
 	void PrintBankrolls();
 	void PrintPot();
 	Player& GetPlayerToBet();
@@ -47,7 +61,7 @@ public:
 	bool ExecuteOption(Inputs::Option& option, Player& pla);
 	int GetPot();
 	void IncreasePlayerToBet();
-	void RaiseBy(int amount, Player& pla);
+	
 	void RaiseTo(int amount, Player& pla);
 	void Bet(int amount, Player& pla);
 	void Call(Player& pla);
@@ -60,12 +74,13 @@ public:
 	Player* lastPlayerToRaise;
 	std::vector<Card> cCards;
 private:
+	void RemoveFromPossibleWinOfAllPlayers(int amount);
 	bool bettingFlag = false;
 	int personToBet = 2;
-	int potThisRound = 0;
-	int pots[10] = { 0,0,0,0,0,0,0,0,0,0 };
+	int totalPot = 0;
+	int potThisBettingRound = 0;
 	int currentBet = 0;
-	int lastRaise = 0;
+	int lastRaise = bigBlind;
 	
 	
 	Deck deck;
