@@ -43,6 +43,14 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+            }
         }
         "Release"
         {
@@ -59,6 +67,17 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+                "Items"
+                {
+                }
+            }
         }
     }
     "Deployable"
@@ -157,7 +176,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:SetupPokerClient"
         "ProductCode" = "8:{F6298EB3-F34B-47E7-BE77-6A3C72CB4882}"
-        "PackageCode" = "8:{A99A7D97-D0CF-4872-956F-C8655233C32F}"
+        "PackageCode" = "8:{B0EC335D-C662-4490-BA1C-D3D7AA373E0F}"
         "UpgradeCode" = "8:{A8B094D7-887D-46E0-B22C-7F89E9DC9B32}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"

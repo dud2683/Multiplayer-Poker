@@ -21,6 +21,7 @@ enum class CustomMsgTypes : uint32_t
 	River,
 	Action,
 	Folds,
+	InvalidName,
 	InvalidAction,
 	StartGame,
 	SentAction,

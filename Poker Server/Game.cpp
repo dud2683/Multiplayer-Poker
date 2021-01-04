@@ -48,6 +48,7 @@ bool Game::SortPlayersByHand()
 	for (int i = 0;i < numberOfPlayers;i++) {
 		copy.push_back(players[i]);
 	}
+	
 	bool thereWasASwap = true;
 	bool thereWasATie = false;
 	while (thereWasASwap) {
@@ -59,9 +60,9 @@ bool Game::SortPlayersByHand()
 				Swap(copy[i], copy[i + int(1)]);
 			}
 			else if (r == 0) {
-				if (copy[i].maximumReturnPerPlayer < copy[i + int(1)].maximumReturnPerPlayer) {
+				thereWasATie = true;
+				if (copy[i].maximumReturnPerPlayer > copy[i + int(1)].maximumReturnPerPlayer) {
 					thereWasASwap = true;
-					thereWasATie = true;
 					Swap(copy[i], copy[i + int(1)]);
 				}
 			}
@@ -84,39 +85,118 @@ void Game::PayoutWinnersWithAllIn()
 {
 	winners.clear();
 	bool tie = SortPlayersByHand();
-	int numberOfTimes = 0;
-	for (int i = 0;i < numberOfPlayers;i++) {
-		int totalForThisPlayer = 0;
-		int winnerMaxReturnpp;
-		for (int j = numberOfTimes;j < numberOfPlayers;j++) {
-			
-			winnerMaxReturnpp = copy[i].maximumReturnPerPlayer;
-			int totalWagerFromOther = copy[j].GetTotalWager();
-			if (totalWagerFromOther >= winnerMaxReturnpp)
-				totalForThisPlayer += winnerMaxReturnpp;
-			else
-				totalForThisPlayer += totalWagerFromOther;
+	struct pot {
+		std::vector<Player> playersInPot;
+		std::vector<Player> winner;
+		int amount = 0;
+	};
+	
+	if (tie) {
+		std::vector<pot> pots;
+		SortByMaxBet();
+		int numberOfPots = 0;
+		pots.push_back(pot());
+		int index = 0;
+		int lowestwager = copy[0].GetTotalWager();
+		RemoveFromPossibleWinOfAllPlayers(lowestwager);
+		for (int i = 0;i < numberOfPlayers;i++) {
+	
+			pots[numberOfPots].playersInPot.push_back(copy[i]);
+			pots[numberOfPots].amount += lowestwager;
 			
 		}
-		if (totalPot > 0) {
-			numberOfTimes++;
-			int remainingPot = totalPot	- totalForThisPlayer;
-			
-			Player* reference = FindPlayerWithID(copy[i].GetId());
-			winners.insert(winners.begin(), reference);
-			if(remainingPot<=0){
-				totalForThisPlayer = totalPot;
+		for (int i = 1;i < copy.size();i++) {
+			int next = i + 1;
+			int delta;
+			if (next == copy.size())
+				delta = 1;
+			else
+				delta = copy[next].GetTotalWager() - copy[i].GetTotalWager();
+			if (delta != 0) {
+				int lowest = copy[i].GetTotalWager();
+				RemoveFromPossibleWinOfAllPlayers(lowest);
+				pots.push_back(pot());
+				numberOfPots++;
+				for (int j = i;j < copy.size();j++) {
+					pots[numberOfPots].playersInPot.push_back(copy[j]);
+					pots[numberOfPots].amount += lowest;
+				}
 			}
-			if(totalForThisPlayer>0)
-				SplitPotWinners.push_back(pA(*reference, totalForThisPlayer));
-			reference->AddToBankroll(totalForThisPlayer);
-			totalPot -= totalForThisPlayer;
-			RemoveFromPossibleWinOfAllPlayers(winnerMaxReturnpp);
-			if (totalPot <= 0) {
-				i = numberOfPlayers;
+		}
+		
+		for (int i = 0;i < pots.size();i++) {
+			int numberOfPlayersInPot = pots[i].playersInPot.size();
+			std::vector<Player*> miniWinners;
+			Player* lastplayer = nullptr;
+			for (int j = 0;j < numberOfPlayersInPot;j++) {
+				if ((pots[i].playersInPot[j].GetIsAllIn() || pots[i].playersInPot[j].GetInTheHand())) {
+					if (lastplayer == nullptr) {
+						lastplayer = &pots[i].playersInPot[j];
+						miniWinners.push_back(lastplayer);
+					}
+					else {
+						rules::Result r = rules::CompareHands(*lastplayer, pots[i].playersInPot[j], cCards);
+						if (r.leftWon < 0) {
+							miniWinners.clear();
+							lastplayer = &pots[i].playersInPot[j];
+							miniWinners.push_back(lastplayer);
+						}
+						else if (r.leftWon == 0) {
+							miniWinners.push_back(&pots[i].playersInPot[j]);
+						}
+					}
+				}
+				
+			}
+			int size = miniWinners.size();
+			int payout = pots[i].amount / size;
+			for (int k = 0;k < size;k++) {
+				SplitPotWinners.push_back(pA(*miniWinners[k], payout));
+				FindPlayerWithID(miniWinners[k]->GetId())->AddToBankroll(payout);
+			}
+		}
+		
+		
+	
+	}
+
+	else {
+
+		int numberOfTimes = 0;
+		for (int i = 0;i < numberOfPlayers;i++) {
+			int totalForThisPlayer = 0;
+			int winnerMaxReturnpp;
+			for (int j = numberOfTimes;j < numberOfPlayers;j++) {
+
+				winnerMaxReturnpp = copy[i].maximumReturnPerPlayer;
+				int totalWagerFromOther = copy[j].GetTotalWager();
+				if (totalWagerFromOther >= winnerMaxReturnpp)
+					totalForThisPlayer += winnerMaxReturnpp;
+				else
+					totalForThisPlayer += totalWagerFromOther;
+
+			}
+			if (totalPot > 0) {
+				numberOfTimes++;
+				int remainingPot = totalPot - totalForThisPlayer;
+
+				Player* reference = FindPlayerWithID(copy[i].GetId());
+				winners.insert(winners.begin(), reference);
+				if (remainingPot <= 0) {
+					totalForThisPlayer = totalPot;
+				}
+				if (totalForThisPlayer > 0)
+					SplitPotWinners.push_back(pA(*reference, totalForThisPlayer));
+				reference->AddToBankroll(totalForThisPlayer);
+				totalPot -= totalForThisPlayer;
+				RemoveFromPossibleWinOfAllPlayers(winnerMaxReturnpp);
+				if (totalPot <= 0) {
+					i = numberOfPlayers;
+				}
 			}
 		}
 	}
+	
 }
 
 int Game::Betting(bool isFirstBetting)
@@ -374,6 +454,26 @@ void Game::Reset()
 	
 }
 
+void Game::SortByMaxBet()//lowest to highest
+{
+	copy.clear();
+	for (int i = 0;i < numberOfPlayers;i++) {
+		copy.push_back(players[i]);
+	}
+	bool thereWasASwap;
+	do {
+		thereWasASwap = false;
+		for (int i = 0;i < numberOfPlayers - 1;i++) {
+			int next = i + 1;
+			if (copy[i].GetTotalWager() > copy[next].GetTotalWager()) {
+				Swap(copy[i], copy[next]);
+				thereWasASwap = true;
+			}
+
+		}
+	} while (thereWasASwap);
+}
+
 bool Game::ValidOption(Inputs::Option input, const Player& pla)
 {
 
@@ -602,9 +702,9 @@ void Game::RemoveFromPossibleWinOfAllPlayers(int amount)
 		if (copy[i].maximumReturnPerPlayer < 0)
 			copy[i].maximumReturnPerPlayer = 0;
 		
-		copy[i].SetCurrentWager(copy[i].GetCurrentWager()- amount);
-		if (copy[i].GetCurrentWager() < 0)
-			copy[i].SetCurrentWager(0);
+		copy[i].RemoveFromTotalWager(amount);
+		if (copy[i].GetTotalWager() < 0)
+			copy[i].SetTotalWager(0);
 	}
 }
 

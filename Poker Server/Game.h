@@ -49,6 +49,7 @@ public:
 	void River();
 	void Reveal();
 	void Reset();
+	void SortByMaxBet();
 	bool ValidOption(Inputs::Option input, const Player& pla);
 	void ServerReveal();
 	int PayOutWinners();

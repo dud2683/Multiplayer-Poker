@@ -37,6 +37,16 @@ uint32_t Player::GetId()
 	return id;
 }
 
+void Player::SetBankroll(int x)
+{
+	bankroll = x;
+}
+
+void Player::RemoveFromTotalWager(int x)
+{
+	totalWager -= x;
+}
+
 void Player::ClearHand()
 {
 	hand.Clear();

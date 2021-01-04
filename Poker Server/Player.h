@@ -28,7 +28,8 @@ public:
 	const bool GetInTheHand();
 	void RevealHand();
 	uint32_t GetId();
-
+	void SetBankroll(int x);
+	void RemoveFromTotalWager(int x);
 	void ClearHand();
 	bool GetIsAllIn();
 	void SetIsAllIn(bool b);

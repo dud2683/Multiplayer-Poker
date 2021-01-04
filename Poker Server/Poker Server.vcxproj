@@ -78,6 +78,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);C:\Program Files (x86)\SDKs\asio-1.18.0\include;C:\Users\niceh\source\repos\Multiplayer Poker\Multiplayer Poker</IncludePath>
+    <OutDir>..\..\..\..\Desktop\PokerServer release</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -87,6 +88,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);C:\Program Files (x86)\SDKs\asio-1.18.0\include;C:\Users\niceh\source\repos\Multiplayer Poker\Multiplayer Poker</IncludePath>
+    <OutDir>..\..\..\..\Desktop\PokerServer release</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -171,7 +173,14 @@
     <ClInclude Include="Inputs.h" />
     <ClInclude Include="Outputs.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Rules.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Poker Server.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="rf.ico.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

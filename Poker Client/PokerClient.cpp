@@ -39,6 +39,8 @@ public:
 		olc::net::message<CustomMsgTypes> msg;
 		msg.header.id = CustomMsgTypes::Disconnect;
 		Send(msg);
+		std::cout << "Disconnected.\n";
+		system("pause");
 		Disconnect();
 	}
 	void StartGame() {
@@ -90,15 +92,17 @@ int main()
 {
 
 	struct player {
-		player(Card c1, Card c2, std::string name) {
+		player(Card c1, Card c2, std::string name, int x) {
 			this->c1 = c1;
 			this->c2 = c2;
 			this->name = name;
+			this->moneyWon = x;
 		}
 		
 		Card c1;
 		Card c2;
 		std::string name;
+		int moneyWon = 0;
 	};
 
 	Inputs inputObj;
@@ -141,7 +145,9 @@ int main()
 		if (key[1] && !old_key[1]) c.MessageAll();
 		if (key[2] && !old_key[2]) c.DisconnectFromServer();
 		if (key[3] && !old_key[3]) c.StartGame();
-		if (key[4] && !old_key[4]) PrintMyCards(myCards[0], myCards[1]);
+		if (key[4] && !old_key[4]) 
+			if(myCards.size()==2)
+				PrintMyCards(myCards[0], myCards[1]);
 
 		for (int i = 0; i < 5; i++) old_key[i] = key[i];
 
@@ -195,6 +201,16 @@ int main()
 					NameMsg.header.id = CustomMsgTypes::GetName;
 					c.SendString(name, NameMsg);
 				
+				}
+				break;
+				case CustomMsgTypes::InvalidName:
+				{
+					std::cout << "That name is already taken please pick another name.\n";
+					std::string name;
+					std::getline(std::cin, name);
+					olc::net::message<CustomMsgTypes> NameMsg;
+					NameMsg.header.id = CustomMsgTypes::GetName;
+					c.SendString(name, NameMsg);
 				}
 				break;
 				case CustomMsgTypes::InvalidAction:
@@ -445,7 +461,7 @@ int main()
 					msg >> c2;
 					std::string name = c.ReceiveString(msg);
 
-					winners.push_back(player(c1, c2, name));
+					winners.push_back(player(c1, c2, name,amountWon));
 
 					if (numberOfWinners == winners.size()) {
 							
@@ -459,7 +475,7 @@ int main()
 							pHand.cards.push_back(winners[i].c2);
 							HandType handT = pHand.FindBestHand();
 
-							std::cout << winners[i].name << " won "<<amountWon<<" with a ";
+							std::cout << winners[i].name << " won "<<winners[i].moneyWon<<" with a ";
 							handT.Name();
 							handT.Print(numberOfKickers);
 							if ((i <= (winners.size() - 2))&&winners.size()>1) {

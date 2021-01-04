@@ -117,6 +117,7 @@ public:
 protected:
 	virtual bool OnClientConnect(std::shared_ptr<olc::net::connection<CustomMsgTypes>> client)
 	{
+		std::cout << "Type \"yes\" to allow connection\n";
 		std::string accept; //= "yes";
 		std::getline(std::cin, accept);
 		if (accept == "yes") {
@@ -142,6 +143,13 @@ protected:
 	{
 		std::cout << "Removing client [" << client->GetName() << "]\n";
 		gm.RemovePlayer(client->GetID());
+		for (int i = 0;i < clients.size();i++) {
+			if (clients[i].clientId == client->GetID()) {
+				clients[i] = *(clients.end()-1);
+				clients.pop_back();
+				
+			}
+		}
 	}
 
 	// Called when a message arrives
@@ -173,17 +181,34 @@ protected:
 		case CustomMsgTypes::GetName:
 		{	std::string name = ReceiveString(msg);
 		client->SetName(name);
-		std::cout << name << " has joinned the server.\n";
-		Player currentPlayer;
-		currentPlayer.name = name;
-		currentPlayer.SetID(client->GetID());
-		waitlist.push_back(currentPlayer);
+		bool nameIsTaken = false;
+
+		for (int i = 0;i <gm.players.size();i++) {
+			if (gm.players[i].name == name) {
+				nameIsTaken = true;
+				break;
+			}
+		}
+		if (nameIsTaken) {
+			olc::net::message<CustomMsgTypes> nmsg;
+			nmsg.header.id = CustomMsgTypes::InvalidName;
+			client->Send(nmsg);
+		
+		}
+		else {
+			std::cout << name << " has joinned the server.\n";
+			Player currentPlayer;
+			currentPlayer.name = name;
+			currentPlayer.SetID(client->GetID());
+			waitlist.push_back(currentPlayer);
+		}
 		}
 		break;
 		case CustomMsgTypes::Disconnect:
 		{
 			std::cout << client->GetName() << " has disconnected\n";
 			client->Disconnect();
+			OnClientDisconnect(client);
 		}
 		break;
 		case CustomMsgTypes::StartGame:
@@ -609,6 +634,11 @@ void BankModifs(CustomServer& server) {
 				std::cin >> amount;
 				server.gm.players[i].RemoveFromBankroll(amount);
 			}
+			else if (ans2 == "s") {
+				std::cout << "\nHow much would you like to set their account to?\n";
+				std::cin >> amount;
+				server.gm.players[i].SetBankroll(amount);
+			}
 			std::getline(std::cin, vstring);
 		}
 		
@@ -670,6 +700,7 @@ int main()
 		if (thereWasAGame) {
 			
 			BankModifs(server);
+			ResetRound(server);
 			server.UpdateIDs(server);
 
 		}
@@ -683,7 +714,7 @@ int main()
 		if (server.gameIsStarted) {
 
 			BankModifs(server);
-			ResetRound(server);
+			
 			Deal(server);
 			
 			server.gm.ServerReveal();

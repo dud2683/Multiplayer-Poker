@@ -82,15 +82,10 @@ void Card::Print() const
         k = 7;
         break;
     }
-
-
     HANDLE  hConsole;
     hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hConsole, k);
-#endif 
-
-
-
+ 
     std::string optional = "";
     if (GetValName() == "Ace" || GetValName() == "8") {
         optional = "n";
@@ -98,10 +93,51 @@ void Card::Print() const
 
 
     std::cout << "a" << optional << " " << GetValName() << " of " << GetSuitName();
-#ifdef _WIN32
+
     k = 7;
     SetConsoleTextAttribute(hConsole, k);
 #endif 
+
+#ifdef __APPLE__
+
+#ifdef TARGET_OS_MAC
+   
+    
+    switch (suit) {
+    case Suit::Clubs:
+        std::cout << "\x1b[32m";
+        break;
+    case Suit::Diamonds:
+        std::cout << "\x1b[34m";
+        break;
+    case Suit::Hearts:
+        std::cout << "\x1b[31m";
+        break;
+    case Suit::Spades:
+        std::cout << "\x1b[30m";
+        break;
+    default:
+        std::cout << "\x1b[0m";
+        break;
+    }
+   
+    std::string optional = "";
+    
+    if (GetValName() == "Ace" || GetValName() == "8") {
+        optional = "n";
+    }
+
+
+    std::cout << "a" << optional << " " << GetValName() << " of " << GetSuitName();
+
+    std::cout << "\x1b[0m";
+    
+
+
+#endif
+#endif
+
+
 }
 std::string Card::GetValName() const
 {
